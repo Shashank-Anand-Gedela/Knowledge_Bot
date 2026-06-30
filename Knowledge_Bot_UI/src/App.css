@@ -1,0 +1,35 @@
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Inter,"Segoe UI",sans-serif;
+}
+
+body{
+    background:#F7F8FC;
+    overflow:hidden;
+}
+
+#root{
+    width:100%;
+    height:100vh;
+}
+
+.app{
+    width:100%;
+    height:100vh;
+    display:flex;
+    background:#F7F8FC;
+}
+
+.main{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+}
+
+.content{
+    flex:1;
+    overflow-y:auto;
+    padding:20px 45px 35px;
+}

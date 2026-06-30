@@ -1,0 +1,56 @@
+# ==========================
+# Python
+# ==========================
+
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+venv/
+.venv/
+env/
+ENV/
+
+# Environment Variables
+.env
+
+# VS Code
+.vscode/
+
+# JetBrains
+.idea/
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Python Cache
+.pytest_cache/
+.mypy_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# ==========================
+# FAISS & Embeddings
+# ==========================
+
+index.faiss
+embeddings.npy
+chunks.pkl
+metadata.pkl
+
+# Temporary Files
+temp/
+uploads/
+
+# SQLite (if used later)
+*.sqlite3
+
+# Secrets
+config.json
+credentials.json
