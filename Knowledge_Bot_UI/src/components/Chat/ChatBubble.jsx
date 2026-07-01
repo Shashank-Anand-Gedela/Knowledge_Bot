@@ -1,7 +1,6 @@
 import "./Chat.css";
 import { Bot, User, Copy, Check } from "lucide-react";
 import { useState } from "react";
-import SourceCard from "./SourceCard";
 
 export default function ChatBubble({ message }) {
 
@@ -84,22 +83,6 @@ export default function ChatBubble({ message }) {
                     )}
 
                 </div>
-
-                {
-
-                    !isUser &&
-
-                    message.sources &&
-
-                    message.sources.length > 0 &&
-
-                    <SourceCard
-
-                        sources={message.sources}
-
-                    />
-
-                }
 
             </div>
 

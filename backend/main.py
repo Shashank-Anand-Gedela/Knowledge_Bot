@@ -1,9 +1,9 @@
 from pathlib import Path
-
-from fastapi import FastAPI
+import shutil
+from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from chatbot import ask_question
+from chatbot import ask_question, reload_knowledge_base
 
 app = FastAPI(
     title="Knowledge Bot API"
@@ -88,3 +88,37 @@ def get_documents():
         "documents": files
 
     }
+
+@app.post("/upload")
+async def upload_document(file: UploadFile = File(...)):
+
+    documents_folder = Path("documents")
+
+    documents_folder.mkdir(exist_ok=True)
+
+    destination = documents_folder / file.filename
+
+    if destination.exists():
+
+        raise HTTPException(
+            status_code=400,
+            detail="Document already exists."
+        )
+
+    with destination.open("wb") as buffer:
+
+        shutil.copyfileobj(
+            file.file,
+            buffer
+        )
+
+    reload_knowledge_base()
+
+    return {
+
+        "message": "Document uploaded successfully.",
+
+        "filename": file.filename
+
+    }
+

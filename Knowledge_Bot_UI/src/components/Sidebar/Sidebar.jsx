@@ -19,7 +19,9 @@ export default function Sidebar({
 
     onBrowse,
 
-    onNewChat
+    onNewChat,
+
+    onUpload
 
 }) {
 
@@ -181,6 +183,8 @@ export default function Sidebar({
                 <button
 
                     className="sidebar-item"
+
+                    onClick={onUpload}
 
                 >
 

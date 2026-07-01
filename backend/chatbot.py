@@ -2,26 +2,91 @@ from document_loader import load_documents
 from embeddings import create_embeddings
 from vector_store import create_faiss_index
 from gemini_service import generate_answer
+from cache_manager import (
+    initialize_cache,
+    cache_exists,
+    save_index,
+    load_index,
+    save_embeddings,
+    load_embeddings,
+    save_chunks,
+    load_chunks,
+    save_metadata,
+    load_metadata
+)
 
 # =====================================================
 # Load Documents
 # =====================================================
 
-print("Loading documents...")
+initialize_cache()
 
-chunks, metadata = load_documents()
+if cache_exists():
 
-print(f"{len(chunks)} chunks loaded.")
+    print("Loading Knowledge Base from Cache...")
 
-print("Creating embeddings...")
+    chunks = load_chunks()
 
-embeddings = create_embeddings(chunks)
+    metadata = load_metadata()
 
-print("Building FAISS index...")
+    embeddings = load_embeddings()
 
-index = create_faiss_index(embeddings)
+    index = load_index()
 
-print("Knowledge Base Ready!")
+    print(f"{len(chunks)} chunks loaded from cache.")
+
+else:
+
+    print("No cache found.")
+
+    print("Loading documents...")
+
+    chunks, metadata = load_documents()
+
+    print(f"{len(chunks)} chunks loaded.")
+
+    print("Creating embeddings...")
+
+    embeddings = create_embeddings(chunks)
+
+    print("Building FAISS index...")
+
+    index = create_faiss_index(embeddings)
+
+    print("Saving cache...")
+
+    save_chunks(chunks)
+
+    save_metadata(metadata)
+
+    save_embeddings(embeddings)
+
+    save_index(index)
+
+    print("Knowledge Base Cached Successfully.")
+
+def reload_knowledge_base():
+
+    global chunks
+    global metadata
+    global embeddings
+    global index
+
+    print("Reloading Knowledge Base...")
+
+    chunks, metadata = load_documents()
+
+    embeddings = create_embeddings(chunks)
+
+    index = create_faiss_index(embeddings)
+
+    save_chunks(chunks)
+    save_metadata(metadata)
+    save_embeddings(embeddings)
+    save_index(index)
+
+    print("Knowledge Base Reloaded!")
+
 
 TOP_K = 5
 

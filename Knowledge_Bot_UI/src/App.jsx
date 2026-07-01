@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 import "./App.css";
 
@@ -10,7 +10,8 @@ import MessageInput from "./components/Chat/MessageInput";
 
 import {
     askQuestion,
-    getDocuments
+    getDocuments,
+    uploadDocument
 } from "./services/api";
 
 function App() {
@@ -22,6 +23,8 @@ function App() {
     const [documents, setDocuments] = useState([]);
 
     const [showDocuments, setShowDocuments] = useState(false);
+
+    const fileInputRef = useRef(null);
 
     useEffect(() => {
 
@@ -79,8 +82,6 @@ function App() {
 
                 text: response.answer,
 
-                sources: response.sources || []
-
             };
 
             setMessages(prev => [
@@ -131,6 +132,51 @@ function App() {
 
     }
 
+    function openFilePicker() {
+
+    fileInputRef.current.click();
+
+    }
+
+
+    async function handleFileUpload(event) {
+
+        const file = event.target.files[0];
+
+        if (!file) return;
+
+        try {
+
+            await uploadDocument(file);
+
+            alert("Document uploaded successfully.");
+
+            await loadDocuments();
+
+            setShowDocuments(true);
+
+        }
+
+        catch (err) {
+
+            if (err.response?.status === 400) {
+
+                alert("Document already exists.");
+
+            }
+
+            else {
+
+                alert("Upload failed.");
+
+            }
+
+        }
+
+        event.target.value = "";
+
+    }
+
     return (
 
         <div className="app">
@@ -144,6 +190,22 @@ function App() {
                 onBrowse={browseDocuments}
 
                 onNewChat={newChat}
+
+                onUpload={openFilePicker}
+
+            />
+
+            <input
+
+                type="file"
+
+                ref={fileInputRef}
+
+                style={{ display: "none" }}
+
+                accept=".pdf,.docx,.pptx,.xlsx,.txt"
+
+                onChange={handleFileUpload}
 
             />
 
