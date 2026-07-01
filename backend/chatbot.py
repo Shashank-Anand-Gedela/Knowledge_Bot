@@ -1,4 +1,8 @@
-from document_loader import load_documents
+from document_loader import (
+    load_documents,
+    load_single_document
+)
+import numpy as np
 from embeddings import create_embeddings
 from vector_store import create_faiss_index
 from gemini_service import generate_answer
@@ -86,6 +90,56 @@ def reload_knowledge_base():
     save_index(index)
 
     print("Knowledge Base Reloaded!")
+
+def add_document_to_knowledge_base(file_path):
+
+    global chunks
+    global metadata
+    global embeddings
+    global index
+
+    print("Processing uploaded document...")
+
+    new_chunks, new_metadata = load_single_document(file_path)
+
+    if not new_chunks:
+
+        print("No chunks created.")
+        return
+
+    print("Creating embeddings...")
+
+    new_embeddings = create_embeddings(new_chunks)
+
+    print(f"Adding {len(new_chunks)} chunks to FAISS...")
+
+    index.add(
+        new_embeddings.astype("float32")
+    )
+
+    chunks.extend(
+        new_chunks
+    )
+
+    metadata.extend(
+        new_metadata
+    )
+
+    embeddings = np.vstack(
+        (
+            embeddings,
+            new_embeddings
+        )
+    )
+
+    print("Updating cache...")
+
+    save_chunks(chunks)
+    save_metadata(metadata)
+    save_embeddings(embeddings)
+    save_index(index)
+
+    print("Knowledge Base Updated Successfully.")
 
 
 TOP_K = 5

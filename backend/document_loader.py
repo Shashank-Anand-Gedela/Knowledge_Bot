@@ -258,3 +258,95 @@ def load_documents():
                 })
 
     return chunks, metadata
+
+def load_single_document(file_path):
+
+    chunks = []
+    metadata = []
+
+    filename = os.path.basename(file_path)
+    extension = filename.lower().split(".")[-1]
+
+    print(f"Loading uploaded document: {filename}")
+
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=500,
+        chunk_overlap=100
+    )
+
+    text = ""
+
+    try:
+
+        if extension == "pdf":
+
+            doc = fitz.open(file_path)
+
+            for page in doc:
+                text += page.get_text()
+
+            doc.close()
+
+        elif extension == "docx":
+
+            document = Document(file_path)
+
+            for para in document.paragraphs:
+                text += para.text + "\n"
+
+        elif extension == "pptx":
+
+            presentation = Presentation(file_path)
+
+            for slide in presentation.slides:
+                for shape in slide.shapes:
+                    if hasattr(shape, "text"):
+                        text += shape.text + "\n"
+
+        elif extension == "xlsx":
+
+            workbook = load_workbook(file_path)
+
+            for sheet in workbook.worksheets:
+
+                for row in sheet.iter_rows(values_only=True):
+
+                    values = [
+                        str(cell)
+                        for cell in row
+                        if cell is not None
+                    ]
+
+                    if values:
+                        text += " ".join(values) + "\n"
+
+        elif extension == "txt":
+
+            with open(file_path, "r", encoding="utf-8") as file:
+                text = file.read()
+
+        else:
+
+            print(f"Unsupported file: {filename}")
+            return [], []
+
+    except Exception as e:
+
+        print(f"Error reading {filename}: {e}")
+        return [], []
+
+    text = clean_text(text)
+
+    document_chunks = splitter.split_text(text)
+
+    for chunk in document_chunks:
+
+        chunks.append(chunk)
+
+        metadata.append({
+            "document": filename
+        })
+
+    print(f"{len(document_chunks)} chunks created.")
+
+    return chunks, metadata

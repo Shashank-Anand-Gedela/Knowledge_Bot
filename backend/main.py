@@ -3,7 +3,11 @@ import shutil
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from chatbot import ask_question, reload_knowledge_base
+from chatbot import (
+    ask_question,
+    reload_knowledge_base,
+    add_document_to_knowledge_base
+)
 
 app = FastAPI(
     title="Knowledge Bot API"
@@ -112,7 +116,7 @@ async def upload_document(file: UploadFile = File(...)):
             buffer
         )
 
-    reload_knowledge_base()
+    add_document_to_knowledge_base(str(destination))
 
     return {
 
