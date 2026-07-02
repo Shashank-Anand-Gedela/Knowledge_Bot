@@ -66,6 +66,12 @@
 
 }
 
+.online-pill.offline .online-dot{
+
+    background:#ef4444;
+
+}
+
 .online-pill span{
 
     font-size:14px;

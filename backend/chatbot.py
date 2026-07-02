@@ -3,6 +3,7 @@ from document_loader import (
     load_single_document
 )
 import numpy as np
+import re
 from embeddings import create_embeddings
 from vector_store import create_faiss_index
 from gemini_service import generate_answer
@@ -69,6 +70,93 @@ else:
 
     print("Knowledge Base Cached Successfully.")
 
+
+TOP_K = 5
+
+
+GREETING_WORDS = {
+    "hi",
+    "hello",
+    "hey",
+    "good morning",
+    "good afternoon",
+    "good evening",
+    "greetings",
+    "how are you",
+    "how are you?",
+    "who are you",
+    "who are you?",
+    "what can you do",
+    "what can you do?"
+}
+
+
+def is_greeting(query):
+    cleaned_query = query.strip().lower()
+
+    for word in GREETING_WORDS:
+        if cleaned_query == word:
+            return True
+
+    return False
+
+def is_gibberish(query):
+
+    cleaned = query.strip().lower()
+
+    if len(cleaned) <= 2:
+        return True
+
+    if cleaned.isdigit():
+        return True
+
+    # random keyboard patterns
+    gibberish_patterns = [
+        "asdf",
+        "qwert",
+        "zxcv",
+        "hjkl",
+        "poiuy",
+        "lkjhg",
+        "mnbvc",
+        "qazwsx",
+        "plmokn",
+        "qwertyuiop",
+        "asdfghjkl",
+        "zxcvbnm",
+        "qwerty",
+        "asdfgh",
+        "zxcvbn",
+        "qazwsxedc",
+        "qazxswedcvfrtgbnhyujmkiolp"
+
+    ]
+
+    for pattern in gibberish_patterns:
+        if pattern in cleaned:
+            return True
+
+    words = cleaned.split()
+
+    # Single weird word
+    if len(words) == 1:
+
+        word = words[0]
+
+        vowels = sum(
+            1 for c in word
+            if c in "aeiou"
+        )
+
+        if len(word) >= 4 and vowels == 0:
+            return True
+
+        if len(word) >= 6 and vowels / len(word) < 0.2:
+            return True
+
+    return False
+
+
 def reload_knowledge_base():
 
     global chunks
@@ -80,6 +168,18 @@ def reload_knowledge_base():
 
     chunks, metadata = load_documents()
 
+    if not chunks:
+        embeddings = np.array([], dtype="float32")
+        index = None
+
+        save_chunks(chunks)
+        save_metadata(metadata)
+        save_embeddings(embeddings)
+        save_index(index)
+
+        print("No documents found. Knowledge Base cleared.")
+        return
+
     embeddings = create_embeddings(chunks)
 
     index = create_faiss_index(embeddings)
@@ -90,6 +190,7 @@ def reload_knowledge_base():
     save_index(index)
 
     print("Knowledge Base Reloaded!")
+
 
 def add_document_to_knowledge_base(file_path):
 
@@ -113,24 +214,36 @@ def add_document_to_knowledge_base(file_path):
 
     print(f"Adding {len(new_chunks)} chunks to FAISS...")
 
-    index.add(
-        new_embeddings.astype("float32")
-    )
+    if index is None or len(chunks) == 0:
 
-    chunks.extend(
-        new_chunks
-    )
+        index = create_faiss_index(new_embeddings)
 
-    metadata.extend(
-        new_metadata
-    )
+        embeddings = new_embeddings
 
-    embeddings = np.vstack(
-        (
-            embeddings,
-            new_embeddings
+        chunks.extend(new_chunks)
+
+        metadata.extend(new_metadata)
+
+    else:
+
+        index.add(
+            new_embeddings.astype("float32")
         )
-    )
+
+        chunks.extend(
+            new_chunks
+        )
+
+        metadata.extend(
+            new_metadata
+        )
+
+        embeddings = np.vstack(
+            (
+                embeddings,
+                new_embeddings
+            )
+        )
 
     print("Updating cache...")
 
@@ -142,71 +255,135 @@ def add_document_to_knowledge_base(file_path):
     print("Knowledge Base Updated Successfully.")
 
 
-TOP_K = 5
+def delete_document_from_knowledge_base(file_name):
+    """
+    Existing behavior is preserved.
+    After deleting a document from the folder, the safest way is to rebuild
+    the knowledge base from remaining documents.
+    """
+
+    print(f"Removing document from knowledge base: {file_name}")
+
+    reload_knowledge_base()
+
+    print("Knowledge Base updated after deletion.")
 
 
-def ask_question(query):
+def build_source_url(source):
+    document_name = source.get("document", "")
+    file_type = source.get("file_type", "")
+    page_number = source.get("page_number")
 
-    # Create embedding for user query
+    if file_type.upper() == "PDF" and page_number:
+        return f"http://localhost:8000/documents/open/{document_name}#page={page_number}"
+
+    return f"http://localhost:8000/documents/open/{document_name}"
+
+
+def ask_question(query, selected_document=None):
+
+    query = query.strip()
+
+    if not query:
+        return {
+            "answer": "Please enter a proper question.",
+            "sources": []
+        }
+
+    if is_greeting(query):
+        return {
+            "answer": "Hello! I can answer questions based on your uploaded documents. Please ask a question related to the documents.",
+            "sources": []
+        }
+
+    if is_gibberish(query):
+        return {
+            "answer": "I could not understand your question. Please ask a clear question related to the uploaded documents.",
+            "sources": []
+        }
+
+    if not chunks or index is None:
+        return {
+            "answer": "No uploaded documents are available. Please upload documents first.",
+            "sources": []
+        }
+
     query_embedding = create_embeddings([query])
 
-    # Search FAISS
+    if selected_document:
+        search_k = len(chunks)
+    else:
+        search_k = min(TOP_K, len(chunks))
+
     distances, indices = index.search(
         query_embedding,
-        k=TOP_K
+        k=search_k
     )
 
     context = ""
+
     retrieved_sources = []
 
-    # Build context
     for idx, score in zip(indices[0], distances[0]):
 
         if idx == -1:
             continue
+
+        source_metadata = metadata[idx]
+
+        if selected_document:
+            if source_metadata["document"].lower() != selected_document.lower():
+                continue
 
         context += chunks[idx]
         context += "\n\n"
 
         retrieved_sources.append({
 
-            "document": metadata[idx]["document"],
+            "document": source_metadata["document"],
 
-            "file_type": metadata[idx]["file_type"],
+            "file_type": source_metadata["file_type"],
 
-            "reference": metadata[idx]["reference"],
+            "reference": source_metadata["reference"],
 
-            "heading": metadata[idx]["heading"],
+            "heading": source_metadata["heading"],
 
-            "score": round(float(score) * 100, 2)
+            "page_number": source_metadata.get("page_number"),
+
+            #"score": round(float(score) * 100, 2),
+
+            "preview": chunks[idx][:300]
 
         })
 
-    # No retrieved chunks
+        if len(retrieved_sources) >= TOP_K:
+            break
+
     if len(retrieved_sources) == 0:
 
+        if selected_document:
+            return {
+                "answer": f"I couldn't find this information in the selected document: {selected_document}.",
+                "sources": []
+            }
+
         return {
-
             "answer": "I couldn't find this information in the uploaded documents.",
-
+            "sources": []
         }
 
-    # Generate answer
     answer = generate_answer(
         context,
         query
     ).strip()
 
-    # If Gemini couldn't answer, don't return any source
     if answer.lower().startswith("i couldn't find this information"):
 
         return {
-
             "answer": answer,
-
+            "sources": []
         }
 
-    # Remove duplicate sources
     unique_sources = []
 
     seen = set()
@@ -214,26 +391,20 @@ def ask_question(query):
     for source in retrieved_sources:
 
         key = (
-
             source["document"],
-
             source["reference"],
-
             source["heading"]
-
         )
 
         if key not in seen:
 
             seen.add(key)
 
+            source["source_url"] = build_source_url(source)
+
             unique_sources.append(source)
 
-    # Only keep the best source
-    top_source = unique_sources[0] if unique_sources else None
-
     return {
-
         "answer": answer,
-
+        "sources": unique_sources
     }

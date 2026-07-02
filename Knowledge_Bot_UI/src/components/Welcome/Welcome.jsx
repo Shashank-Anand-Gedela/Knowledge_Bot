@@ -21,13 +21,19 @@ export default function Welcome() {
 
             <h1>
 
-                Hello!
+                Welcome to Knowledge Bot!
 
             </h1>
 
             <p>
 
-                Ask me anything about your documents.
+                You must upload a document before asking a question.
+
+            </p>
+
+            <p className="welcome-subtext">
+
+                Supported file types:
 
             </p>
 
@@ -87,20 +93,6 @@ export default function Welcome() {
                     <span>Text</span>
 
                 </div>
-
-            </div>
-
-            <div className="today-divider">
-
-                <div></div>
-
-                <span>
-
-                    Today
-
-                </span>
-
-                <div></div>
 
             </div>
 

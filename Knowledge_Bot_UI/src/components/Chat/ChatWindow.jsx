@@ -6,13 +6,39 @@ export default function ChatWindow({
 
     messages,
 
-    loading
+    loading,
+
+    selectedDocument
 
 }) {
 
     return (
 
         <div className="chat-window">
+
+            {
+    selectedDocument && (
+
+        <div
+            style={{
+                background:"#eff6ff",
+                border:"1px solid #bfdbfe",
+                padding:"10px",
+                borderRadius:"10px",
+                marginBottom:"16px"
+            }}
+        >
+            Asking questions only from:
+
+            <strong>
+                {" "}
+                {selectedDocument}
+            </strong>
+
+        </div>
+
+    )
+}
 
             {messages.map((message, index) => (
 

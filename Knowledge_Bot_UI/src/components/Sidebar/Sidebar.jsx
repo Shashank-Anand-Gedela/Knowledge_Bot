@@ -8,8 +8,10 @@ import {
     FileSpreadsheet,
     FileType2,
     Presentation,
-    FileCode2
+    FileCode2,
+    Trash2
 } from "lucide-react";
+import { deleteDocument } from "../../services/api";
 
 export default function Sidebar({
 
@@ -21,7 +23,13 @@ export default function Sidebar({
 
     onNewChat,
 
-    onUpload
+    onUpload,
+
+    selectedDocument,
+
+    setSelectedDocument,
+
+    reloadDocuments
 
 }) {
 
@@ -47,6 +55,43 @@ export default function Sidebar({
         }
 
     }
+  async function handleDelete(filename) {
+
+    const confirmed = window.confirm(
+        `Delete ${filename}?`
+    );
+
+    if (!confirmed) return;
+
+    try {
+
+        await deleteDocument(filename);
+
+if (
+    selectedDocument &&
+    selectedDocument.toLowerCase() === filename.toLowerCase()
+) {
+    setSelectedDocument(null);
+}
+
+setTimeout(async () => {
+    await reloadDocuments();
+}, 100);
+
+alert("Document deleted successfully.");
+        //alert("Document deleted successfully.");
+
+    }
+
+    catch (err) {
+
+        console.log(err);
+
+        alert("Failed to delete document.");
+
+    }
+
+}
 
     return (
 
@@ -144,27 +189,81 @@ export default function Sidebar({
 
                                 :
 
-                                documents.map((doc,index)=>(
+                    documents.map((doc,index)=>(
+
+                        <div
+                            className="document-item"
+                            key={index}
+                            style={{
+                                display:"flex",
+                                alignItems:"center",
+                                justifyContent:"space-between"
+                            }}
+                        >
+
+                            <div
+                                style={{
+                                    display:"flex",
+                                    alignItems:"center",
+                                    gap:"8px",
+                                    flex:1
+                                }}
+                            >
+
+                                {getIcon(doc.type)}
+
+                                <input
+                                    type="radio"
+                                    checked={
+                                        selectedDocument?.toLowerCase() ===
+                                        doc.name.toLowerCase()
+                                    }
+                                    onChange={() =>
+                                        setSelectedDocument(doc.name)
+                                    }
+                                />
+
+                                <a
+                                    href={doc.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                >
+                                    {doc.name}
+                                </a>
+                                {
+                                selectedDocument && (
 
                                     <div
-
-                                        className="document-item"
-
-                                        key={index}
-
+                                        style={{
+                                            marginTop:"10px",
+                                            fontSize:"13px",
+                                            fontWeight:"600",
+                                            color:"#2563eb"
+                                        }}
                                     >
-
-                                        {getIcon(doc.type)}
-
-                                        <span>
-
-                                            {doc.name}
-
-                                        </span>
-
+                                        Selected: {selectedDocument}
                                     </div>
 
-                                ))
+                                )
+                            }
+
+                            </div>
+
+                            <Trash2
+                                size={16}
+                                color="red"
+                                style={{
+                                    cursor:"pointer"
+                                }}
+                                onClick={() =>
+                                    handleDelete(doc.name)
+                                }
+                            />
+
+                        </div>
+
+                    ))
+
 
                             }
 

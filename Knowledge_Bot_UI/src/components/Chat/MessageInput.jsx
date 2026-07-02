@@ -1,6 +1,6 @@
 import { useState } from "react";
 import "./Chat.css";
-import { SendHorizontal, Paperclip } from "lucide-react";
+import { SendHorizontal } from "lucide-react";
 
 export default function MessageInput({
 
@@ -37,12 +37,6 @@ export default function MessageInput({
     return (
 
         <div className="input-area">
-
-            <button className="attach-btn">
-
-                <Paperclip size={20} />
-
-            </button>
 
             <input
 
