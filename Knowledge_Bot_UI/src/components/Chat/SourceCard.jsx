@@ -2,8 +2,7 @@ import "./Chat.css";
 import {
     FileText,
     Hash,
-    BookOpen,
-    Star
+    BookOpen
 } from "lucide-react";
 
 export default function SourceCard({ sources }) {
@@ -39,34 +38,18 @@ export default function SourceCard({ sources }) {
                             }}
                         >
 
-                            <strong>
-
+                            <a
+                                href={source.source_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                style={{
+                                    fontWeight: "600",
+                                    color: "#2563eb",
+                                    textDecoration: "none"
+                                }}
+                            >
                                 {source.document}
-
-                            </strong>
-
-                            {
-
-                                source.score && (
-
-                                    <span
-                                        style={{
-                                            background: "#ecfdf5",
-                                            color: "#16a34a",
-                                            padding: "4px 10px",
-                                            borderRadius: "20px",
-                                            fontSize: "12px",
-                                            fontWeight: "600"
-                                        }}
-                                    >
-
-                                        {(source.score * 100).toFixed(1)}%
-
-                                    </span>
-
-                                )
-
-                            }
+                            </a>
 
                         </div>
 
@@ -88,23 +71,7 @@ export default function SourceCard({ sources }) {
                                         }}
                                     />
 
-                                    {source.reference}
-
-                                </p>
-
-                            )
-
-                        }
-
-                        {
-
-                            source.heading && (
-
-                                <p
-                                    style={{
-                                        marginTop: "8px"
-                                    }}
-                                >
+                         
 
                                     <BookOpen
                                         size={14}
@@ -124,7 +91,7 @@ export default function SourceCard({ sources }) {
 
                         {
 
-                            source.chunk && (
+                            source.preview && (
 
                                 <div
                                     style={{
@@ -137,7 +104,7 @@ export default function SourceCard({ sources }) {
                                     }}
                                 >
 
-                                    {source.chunk}
+                                    {source.preview}
 
                                 </div>
 

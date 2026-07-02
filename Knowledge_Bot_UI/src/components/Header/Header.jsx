@@ -1,6 +1,6 @@
 import "./Header.css";
 
-export default function Header() {
+export default function Header({ isOnline }) {
   return (
     <header className="header">
 
@@ -10,11 +10,11 @@ export default function Header() {
 
       <div className="header-right">
 
-        <div className="online-pill">
+        <div className={`online-pill ${isOnline ? "online" : "offline"}`}>
 
           <div className="online-dot"></div>
 
-          <span>Online</span>
+          <span>{isOnline ? "Online" : "Offline"}</span>
 
         </div>
 

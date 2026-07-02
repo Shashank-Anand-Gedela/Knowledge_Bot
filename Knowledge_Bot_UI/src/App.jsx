@@ -11,105 +11,117 @@ import MessageInput from "./components/Chat/MessageInput";
 import {
     askQuestion,
     getDocuments,
-    uploadDocument
+    uploadDocument,
+    checkHealth
 } from "./services/api";
 
 function App() {
 
     const [messages, setMessages] = useState([]);
-
     const [loading, setLoading] = useState(false);
 
     const [documents, setDocuments] = useState([]);
+    const [selectedDocument, setSelectedDocument] = useState(null);
 
     const [showDocuments, setShowDocuments] = useState(false);
+    const [isOnline, setIsOnline] = useState(false);
 
     const fileInputRef = useRef(null);
 
     useEffect(() => {
-
         loadDocuments();
+    }, []);
+
+    useEffect(() => {
+
+        async function pingBackend() {
+
+            try {
+                await checkHealth();
+                setIsOnline(true);
+            }
+            catch {
+                setIsOnline(false);
+            }
+
+        }
+
+        pingBackend();
+
+        const interval = setInterval(
+            pingBackend,
+            10000
+        );
+
+        return () => clearInterval(interval);
 
     }, []);
 
-    async function loadDocuments() {
+   async function loadDocuments() {
 
-        try {
+    try {
 
-            const docs = await getDocuments();
+        const docs = await getDocuments();
 
-            setDocuments(docs);
+        console.log("Updated docs:", docs);
 
-        }
-
-        catch (err) {
-
-            console.log(err);
-
-        }
+        setDocuments([...docs]);
 
     }
+
+    catch (err) {
+
+        console.log(err);
+
+    }
+
+}
 
     async function sendMessage(question) {
 
         if (!question.trim()) return;
 
         const userMessage = {
-
             type: "user",
-
             text: question
-
         };
 
         setMessages(prev => [
-
             ...prev,
-
             userMessage
-
         ]);
 
         setLoading(true);
 
         try {
 
-            const response = await askQuestion(question);
+            const response = await askQuestion(
+                question,
+                selectedDocument
+            );
 
             const botMessage = {
-
                 type: "bot",
-
                 text: response.answer,
-
+                sources: response.sources || []
             };
 
             setMessages(prev => [
-
                 ...prev,
-
                 botMessage
-
             ]);
 
         }
 
-        catch (err) {
+        catch {
 
             setMessages(prev => [
-
                 ...prev,
-
                 {
-
                     type: "bot",
-
                     text: "Unable to connect to backend.",
-
                     sources: []
-
                 }
-
             ]);
 
         }
@@ -121,7 +133,6 @@ function App() {
     function newChat() {
 
         setMessages([]);
-
         setLoading(false);
 
     }
@@ -134,10 +145,9 @@ function App() {
 
     function openFilePicker() {
 
-    fileInputRef.current.click();
+        fileInputRef.current.click();
 
     }
-
 
     async function handleFileUpload(event) {
 
@@ -182,41 +192,31 @@ function App() {
         <div className="app">
 
             <Sidebar
-
-                documents={documents}
-
-                showDocuments={showDocuments}
-
-                onBrowse={browseDocuments}
-
-                onNewChat={newChat}
-
-                onUpload={openFilePicker}
-
-            />
+    documents={documents}
+    showDocuments={showDocuments}
+    onBrowse={browseDocuments}
+    onNewChat={newChat}
+    onUpload={openFilePicker}
+    selectedDocument={selectedDocument}
+    setSelectedDocument={setSelectedDocument}
+    reloadDocuments={loadDocuments}
+/>
 
             <input
-
                 type="file"
-
                 ref={fileInputRef}
-
                 style={{ display: "none" }}
-
                 accept=".pdf,.docx,.pptx,.xlsx,.txt"
-
                 onChange={handleFileUpload}
-
             />
 
             <div className="main">
 
-                <Header />
+                <Header isOnline={isOnline} />
 
                 <div className="content">
 
                     {
-
                         messages.length === 0 ? (
 
                             <Welcome />
@@ -224,25 +224,19 @@ function App() {
                         ) : (
 
                             <ChatWindow
-
                                 messages={messages}
-
                                 loading={loading}
-
+                                selectedDocument={selectedDocument}
                             />
 
                         )
-
                     }
 
                 </div>
 
                 <MessageInput
-
                     onSend={sendMessage}
-
                     loading={loading}
-
                 />
 
             </div>

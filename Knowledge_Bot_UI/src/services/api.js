@@ -4,11 +4,17 @@ const api = axios.create({
     baseURL: "http://127.0.0.1:8000"
 });
 
-export async function askQuestion(question) {
+export async function checkHealth() {
+    const response = await api.get("/");
+    return response.data;
+}
+
+export async function askQuestion(question, selectedDocument = null) {
 
     const response = await api.get("/ask", {
         params: {
-            question
+            question,
+            selected_document: selectedDocument
         }
     });
 
@@ -36,6 +42,15 @@ export async function uploadDocument(file) {
                 "Content-Type": "multipart/form-data"
             }
         }
+    );
+
+    return response.data;
+}
+
+export async function deleteDocument(filename) {
+
+    const response = await api.delete(
+        `/documents/${encodeURIComponent(filename)}`
     );
 
     return response.data;
